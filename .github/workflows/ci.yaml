@@ -450,6 +450,12 @@ jobs:
         set -o nounset
         set -o pipefail
 
+        echo ""
+        echo ""
+        echo "logging metadata annotations"
+        kubectl get podintent.conventions.carto.run spring-sample -ojson | jq -r ".status.template.metadata.annotations"
+        echo ""
+        echo ""
         echo "##[group]Deploy spring convention server"
           kapp deploy -a spring-convention-server -n kube-system \
             -f <(kbld -f convention-bundle/samples/spring-convention-server/server.yaml -f convention-bundle/samples/.imgpkg/images.yml) -y
