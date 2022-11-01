@@ -3,7 +3,7 @@ module github.com/vmware-tanzu/cartographer-conventions/samples/spring-conventio
 go 1.19
 
 require (
-	github.com/CycloneDX/cyclonedx-go v0.6.0
+	github.com/CycloneDX/cyclonedx-go v0.7.0
 	// wokeignore:rule=Masterminds
 	github.com/Masterminds/semver v1.5.0
 	github.com/go-logr/logr v1.2.3
