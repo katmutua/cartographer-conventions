@@ -460,6 +460,10 @@ jobs:
         echo "##[group]Wait for workload status to be ready"
           kubectl wait podintents.conventions.carto.run spring-sample --for condition=ready
         echo "##[endgroup]"
+        echo "logging metadata information"
+        echo kubectl get podintent.conventions.carto.run spring-sample -ojson | jq -r ".status.template.metadata"
+        echo ""
+        echo ""
         echo "##[group]Verify spring convention is applied to workload"
           actual_annotation=$(kubectl get podintent.conventions.carto.run spring-sample -ojson | jq -r ".status.template.metadata.annotations"[\"boot.spring.io/version\"])
           if [[ "${actual_annotation}" == "null" || -z "${actual_annotation}" ]]; then echo "Annotations \"boot.spring.io/version\" is not present. Exiting..."; exit 1; fi;
