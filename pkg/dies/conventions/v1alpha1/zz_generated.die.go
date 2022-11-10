@@ -309,6 +309,12 @@ func (d *ClusterPodConventionSpecDie) Webhook(v *conventionsv1alpha1.ClusterPodC
 	})
 }
 
+func (d *ClusterPodConventionSpecDie) Ytt(v conventionsv1alpha1.YttTemplate) *ClusterPodConventionSpecDie {
+	return d.DieStamp(func(r *conventionsv1alpha1.ClusterPodConventionSpec) {
+		r.Ytt = v
+	})
+}
+
 var ClusterPodConventionWebhookBlank = (&ClusterPodConventionWebhookDie{}).DieFeed(conventionsv1alpha1.ClusterPodConventionWebhook{})
 
 type ClusterPodConventionWebhookDie struct {

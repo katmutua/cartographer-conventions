@@ -37,6 +37,11 @@ func (s *ClusterPodConventionSpec) Default() {
 	if s.Webhook != nil {
 		s.Webhook.Default()
 	}
+
+	// set default for the ytt template
+	// if s.Ytt != "" {
+	// 	s.Ytt.template = ""
+	// }
 	if s.SelectorTarget == "" {
 		s.SelectorTarget = PodTemplateSpecLabels
 	}

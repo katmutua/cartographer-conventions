@@ -33,6 +33,8 @@ const (
 	LatePriority PriorityLevel = "Late"
 )
 
+type YttTemplate string
+
 const (
 	PodTemplateSpecLabels SelectorTargetSource = "PodTemplateSpec"
 	PodIntentLabels       SelectorTargetSource = "PodIntent"
@@ -46,6 +48,7 @@ type ClusterPodConventionSpec struct {
 	SelectorTarget SelectorTargetSource         `json:"selectorTarget"`
 	Priority       PriorityLevel                `json:"priority,omitempty"`
 	Webhook        *ClusterPodConventionWebhook `json:"webhook,omitempty"`
+	Ytt            YttTemplate                  `json:"ytt,omitempty"`
 }
 
 type ClusterPodConventionWebhook struct {

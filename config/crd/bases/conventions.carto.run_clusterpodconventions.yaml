@@ -101,6 +101,8 @@ spec:
                 required:
                 - clientConfig
                 type: object
+              ytt:
+                type: string
             type: object
         required:
         - spec
