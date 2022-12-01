@@ -98,6 +98,7 @@ func ResolveConventions() reconcilers.SubReconciler {
 		Name: "ResolveConventions",
 		Sync: func(ctx context.Context, parent *conventionsv1alpha1.PodIntent) error {
 			log := logr.FromContextOrDiscard(ctx)
+			log.Info("HERE FIRST =========")
 			c := reconcilers.RetrieveConfigOrDie(ctx)
 			sources := &conventionsv1alpha1.ClusterPodConventionList{}
 			if err := c.List(ctx, sources); err != nil {
@@ -126,6 +127,20 @@ func ResolveConventions() reconcilers.SubReconciler {
 						clientConfig.CABundle = caBundle
 					}
 					convention.ClientConfig = *clientConfig
+				} else if source.Spec.Ytt != nil {
+					// read template spec and convenert to a sptream of bytes
+					// template
+					template := &parent.Spec.Template
+					// convert template as a stream of bytes
+					// templatesAsBytes = bytes.NewBuffer([]byte(template(string)))
+
+					// convert template to a stream of bytes
+					// kubectl = "kubectl"
+					// ytt = "ytt"
+					// args
+					log.Info("your template spec", template.GetObjectMeta())
+
+					return nil
 				}
 				conventions = append(conventions, convention)
 			}
