@@ -73,9 +73,11 @@ func (s *ClusterPodConventionSpec) Validate() validation.FieldErrors {
 	}
 
 	// Webhook will be required mutually exclusive of other options that don't exist yet
-	if s.Webhook == nil {
-		errs = errs.Also(validation.ErrMissingField("webhook"))
+	if s.Webhook == nil && s.Ytt == "" {
+		errs = errs.Also(validation.ErrMissingField("webhook")).Also(validation.ErrMissingField("ytt"))
+
 	} else {
+		// validate  via the ytt field as well
 		errs = errs.Also(s.Webhook.Validate().ViaField("webhook"))
 	}
 
