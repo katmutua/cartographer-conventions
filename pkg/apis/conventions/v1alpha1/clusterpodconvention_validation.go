@@ -77,14 +77,14 @@ func (s *ClusterPodConventionSpec) Validate() validation.FieldErrors {
 		errs = errs.Also(validation.ErrMissingField("webhook")).Also(validation.ErrMissingField("ytt"))
 
 	} else {
-		// validate  via the ytt field as well
-		// return multiple errors for this to request a desired configuration
-
 		// only invoke webhook validations if the ytt configuration is not being used
 		if s.Ytt == nil && s.Webhook != nil {
 			errs = errs.Also(s.Webhook.Validate().ViaField("webhook"))
 		}
-		// errs = errs.Also(s.Ytt.Validate().ViaField("ytt"))
+		// only invoke ytt validations if the webhook configuration is not being used
+		if s.Webhook == nil && s.Ytt != nil {
+			errs = errs.Also(s.Webhook.Validate().ViaField("ytt"))
+		}
 	}
 
 	if s.SelectorTarget != PodTemplateSpecLabels && s.SelectorTarget != PodIntentLabels {
@@ -96,13 +96,13 @@ func (s *ClusterPodConventionSpec) Validate() validation.FieldErrors {
 	return errs
 }
 
-// func (s *ClusterPodConventionYttTemplate) Validate() validation.FieldErrors {
-// 	errs := validation.FieldErrors{}
-// 	if s.Template == "" {
-// 		errs = errs.Also(validation.ErrMissingField("template"))
-// 	}
-// 	return errs
-// }
+func (s *ClusterPodConventionYttTemplate) Validate() validation.FieldErrors {
+	errs := validation.FieldErrors{}
+	if s.Template == "" {
+		errs = errs.Also(validation.ErrMissingField("template"))
+	}
+	return errs
+}
 
 func (s *ClusterPodConventionWebhook) Validate() validation.FieldErrors {
 	errs := validation.FieldErrors{}
