@@ -20,16 +20,23 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"os"
+	"os/exec"
+	"path"
+	"runtime"
 	"sort"
 	"strings"
+	"time"
 
 	"github.com/go-logr/logr"
 	"github.com/google/go-containerregistry/pkg/authn/k8schain"
 	"github.com/vmware-labs/reconciler-runtime/apis"
 	"github.com/vmware-labs/reconciler-runtime/reconcilers"
 	"github.com/vmware-labs/reconciler-runtime/tracker"
+	"gopkg.in/yaml.v2"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
@@ -132,19 +139,15 @@ func ResolveConventions() reconcilers.SubReconciler {
 					convention.ClientConfig = *clientConfig
 				} else if source.Spec.Ytt != nil {
 					log.Info("handling a ytt based convention")
-					// read template spec and convenert to a sptream of bytes
-					// template
-					template := &parent.Spec.Template
-					// convert template as a stream of bytes
-					// templatesAsBytes = bytes.NewBuffer([]byte(template(string)))
 
-					// convert template to a stream of bytes
-					// kubectl = "kubectl"
-					// ytt = "ytt"
-					// args
-					log.Info("your template spec", template.GetObjectMeta())
+					// read template spec and convert to string
 
-					return nil
+					log.Info("retrieved pod template spec from the workload", parent)
+					stampedObj, err := ApplyYtt(ctx, *parent)
+					if err != nil {
+						return nil
+					}
+					log.Info("stamped out object", stampedObj)
 				}
 				conventions = append(conventions, convention)
 			}
@@ -160,6 +163,51 @@ func ResolveConventions() reconcilers.SubReconciler {
 			return nil
 		},
 	}
+}
+
+func ApplyYtt(ctx context.Context, workload conventionsv1alpha1.PodIntent) (interface{}, error) {
+	template := workload.Spec.Template.AsPodTemplateSpec()
+	log := logr.FromContextOrDiscard(ctx)
+
+	ctx, cancel := context.WithTimeout(ctx, 4*time.Second)
+	defer cancel()
+
+	ytt := "ytt"
+	if kodata, ok := os.LookupEnv("KO_DATA_PATH"); ok {
+		ytt = path.Join(kodata, fmt.Sprintf("ytt-%s-%s", runtime.GOOS, runtime.GOARCH))
+	}
+
+	args := []string{"--version"}
+	stdin := bytes.NewReader([]byte(template.Spec.String()))
+	stdout := bytes.NewBuffer([]byte{})
+	stderr := bytes.NewBuffer([]byte{})
+
+	cmd := exec.CommandContext(ctx, ytt, args...)
+	cmd.Stdin = stdin
+	cmd.Stdout = stdout
+	cmd.Stderr = stderr
+
+	log.Info("ytt call args", args)
+	log.Info("ytt call input", template)
+
+	if err := cmd.Run(); err != nil {
+		msg := stderr.String()
+		if msg == "" {
+			log.Error(err, "failed handle ytt")
+			return nil, err
+		}
+		return nil, err
+	}
+	output := stdout.String()
+	log.Info("ytt result", "output", output)
+
+	stampedObject := &unstructured.Unstructured{}
+	log.Info("your stamped object", stampedObject)
+	if err := yaml.Unmarshal([]byte(output), stampedObject); err != nil {
+		// ytt should never return invalid yaml
+		return nil, err
+	}
+	return stampedObject, nil
 }
 
 // +kubebuilder:rbac:groups=core,resources=secrets,verbs=get;list;watch

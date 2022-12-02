@@ -82,9 +82,9 @@ func (s *ClusterPodConventionSpec) Validate() validation.FieldErrors {
 			errs = errs.Also(s.Webhook.Validate().ViaField("webhook"))
 		}
 		// only invoke ytt validations if the webhook configuration is not being used
-		if s.Webhook == nil && s.Ytt != nil {
-			errs = errs.Also(s.Webhook.Validate().ViaField("ytt"))
-		}
+		// if s.Webhook == nil && s.Ytt != nil {
+		// 	errs = errs.Also(s.Ytt.Validate().ViaField("ytt"))
+		// }
 	}
 
 	if s.SelectorTarget != PodTemplateSpecLabels && s.SelectorTarget != PodIntentLabels {
