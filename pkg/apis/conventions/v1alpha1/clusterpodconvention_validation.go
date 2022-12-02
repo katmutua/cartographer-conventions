@@ -79,7 +79,12 @@ func (s *ClusterPodConventionSpec) Validate() validation.FieldErrors {
 	} else {
 		// validate  via the ytt field as well
 		// return multiple errors for this to request a desired configuration
-		errs = errs.Also(s.Webhook.Validate().ViaField("webhook"))
+
+		// only invoke webhook validations if the ytt configuration is not being used
+		if s.Ytt == nil && s.Webhook != nil {
+			errs = errs.Also(s.Webhook.Validate().ViaField("webhook"))
+		}
+		// errs = errs.Also(s.Ytt.Validate().ViaField("ytt"))
 	}
 
 	if s.SelectorTarget != PodTemplateSpecLabels && s.SelectorTarget != PodIntentLabels {
@@ -88,9 +93,16 @@ func (s *ClusterPodConventionSpec) Validate() validation.FieldErrors {
 				`Accepted selector target values are "PodIntent" and "PodTemplateSpec". The default value is set to "PodTemplateSpec"`),
 		})
 	}
-
 	return errs
 }
+
+// func (s *ClusterPodConventionYttTemplate) Validate() validation.FieldErrors {
+// 	errs := validation.FieldErrors{}
+// 	if s.Template == "" {
+// 		errs = errs.Also(validation.ErrMissingField("template"))
+// 	}
+// 	return errs
+// }
 
 func (s *ClusterPodConventionWebhook) Validate() validation.FieldErrors {
 	errs := validation.FieldErrors{}

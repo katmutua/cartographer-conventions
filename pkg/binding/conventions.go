@@ -84,15 +84,12 @@ func (c *Conventions) Sort() Conventions {
 	return originalConventions
 }
 
-func (c *Conventions) Apply(ctx context.Context,
-	parent *conventionsv1alpha1.PodIntent,
-	wc WebhookConfig,
-	rc RegistryConfig,
-) (*corev1.PodTemplateSpec, error) {
+func (c *Conventions) Apply(ctx context.Context, parent *conventionsv1alpha1.PodIntent, wc WebhookConfig, rc RegistryConfig) (*corev1.PodTemplateSpec, error) {
 	log := logr.FromContextOrDiscard(ctx)
 	if parent == nil {
 		return nil, fmt.Errorf("pod intent is not set")
 	}
+	// extract the pod template spec
 	workload := parent.Spec.Template.AsPodTemplateSpec()
 	appliedConventions := []string{}
 	if str := workload.Annotations[conventionsv1alpha1.AppliedConventionsAnnotationKey]; str != "" {
@@ -105,6 +102,7 @@ func (c *Conventions) Apply(ctx context.Context,
 			log.Error(err, "fetching metadata for Images failed")
 			return nil, fmt.Errorf("fetching metadata for Images failed: %v", err)
 		}
+
 		conventionRequestObj := &webhookv1alpha1.PodConventionContext{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: fmt.Sprintf("%s-%s", parent.GetName(), convention.Name),

@@ -98,7 +98,6 @@ func ResolveConventions() reconcilers.SubReconciler {
 		Name: "ResolveConventions",
 		Sync: func(ctx context.Context, parent *conventionsv1alpha1.PodIntent) error {
 			log := logr.FromContextOrDiscard(ctx)
-			log.Info("HERE FIRST =========")
 			c := reconcilers.RetrieveConfigOrDie(ctx)
 			sources := &conventionsv1alpha1.ClusterPodConventionList{}
 			if err := c.List(ctx, sources); err != nil {
@@ -109,11 +108,15 @@ func ResolveConventions() reconcilers.SubReconciler {
 			for i := range sources.Items {
 				source := sources.Items[i].DeepCopy()
 				source.Default()
+
 				convention := binding.Convention{
 					Name:      source.Name,
 					Selectors: source.Spec.Selectors,
 					Priority:  source.Spec.Priority,
 				}
+
+				log.Info("created convention ... ", convention)
+
 				if source.Spec.Webhook != nil {
 					clientConfig := source.Spec.Webhook.ClientConfig.DeepCopy()
 					if source.Spec.Webhook.Certificate != nil {
@@ -128,6 +131,7 @@ func ResolveConventions() reconcilers.SubReconciler {
 					}
 					convention.ClientConfig = *clientConfig
 				} else if source.Spec.Ytt != nil {
+					log.Info("handling a ytt based convention")
 					// read template spec and convenert to a sptream of bytes
 					// template
 					template := &parent.Spec.Template
