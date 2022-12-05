@@ -139,15 +139,14 @@ func ResolveConventions() reconcilers.SubReconciler {
 					convention.ClientConfig = *clientConfig
 				} else if source.Spec.Ytt != nil {
 					log.Info("handling a ytt based convention")
-
-					// read template spec and convert to string
-
 					log.Info("retrieved pod template spec from the workload", parent)
-					stampedObj, err := ApplyYtt(ctx, *parent)
-					if err != nil {
-						return nil
-					}
-					log.Info("stamped out object", stampedObj)
+
+					// stampedObj, err := ApplyYtt(ctx, *parent)
+					// if err != nil {
+					// 	return nil
+					// }
+					// log.Info("stamped out object", stampedObj)
+					ExecCall()
 				}
 				conventions = append(conventions, convention)
 			}
@@ -165,23 +164,56 @@ func ResolveConventions() reconcilers.SubReconciler {
 	}
 }
 
+func ExecCall() {
+	app := "echo"
+
+	arg0 := "-e"
+	arg1 := "Hello world"
+	arg2 := "\n\tfrom"
+	arg3 := "golang"
+
+	cmd := exec.Command(app, arg0, arg1, arg2, arg3)
+	stdout, err := cmd.Output()
+
+	if err != nil {
+		fmt.Println(err.Error())
+		return
+	}
+	fmt.Println(string(stdout))
+
+}
+
 func ApplyYtt(ctx context.Context, workload conventionsv1alpha1.PodIntent) (interface{}, error) {
+	// read template spec from the workload
 	template := workload.Spec.Template.AsPodTemplateSpec()
 	log := logr.FromContextOrDiscard(ctx)
 
+	// set timeout to about  4 secs to process the ytt template
 	ctx, cancel := context.WithTimeout(ctx, 4*time.Second)
 	defer cancel()
 
+	// setup ytt path
 	ytt := "ytt"
 	if kodata, ok := os.LookupEnv("KO_DATA_PATH"); ok {
 		ytt = path.Join(kodata, fmt.Sprintf("ytt-%s-%s", runtime.GOOS, runtime.GOARCH))
 	}
+
+	// toolsBinDir := filepath.Join(projectRootDir, constants.ToolsBinDirPath)
+	// ytt_command := exec.Command(
+	// 	filepath.Join(toolsBinDir, "ytt"),
+	// 	"-f-",
+	// 	"-f", packageHelpersLibFile,
+	// 	"-f", packageValuesFile,
+	// 	"-v", "packageRepository="+packageRepository,
+	// 	"-v", "registry="+registry,
+	// ) //
 
 	args := []string{"--version"}
 	stdin := bytes.NewReader([]byte(template.Spec.String()))
 	stdout := bytes.NewBuffer([]byte{})
 	stderr := bytes.NewBuffer([]byte{})
 
+	// setup exec call
 	cmd := exec.CommandContext(ctx, ytt, args...)
 	cmd.Stdin = stdin
 	cmd.Stdout = stdout
@@ -190,6 +222,7 @@ func ApplyYtt(ctx context.Context, workload conventionsv1alpha1.PodIntent) (inte
 	log.Info("ytt call args", args)
 	log.Info("ytt call input", template)
 
+	// invoke run call
 	if err := cmd.Run(); err != nil {
 		msg := stderr.String()
 		if msg == "" {

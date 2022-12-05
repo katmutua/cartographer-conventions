@@ -34,14 +34,12 @@ func (s *ClusterPodConventionSpec) Default() {
 	if s.Priority == "" {
 		s.Priority = NormalPriority
 	}
-	if s.Webhook != nil {
+
+	// only set this default if ytt is not the current configuration
+	if s.Webhook != nil && s.Ytt == nil {
 		s.Webhook.Default()
 	}
 
-	// set default for the ytt template
-	// if s.Ytt != "" {
-	// 	s.Ytt.template = ""
-	// }
 	if s.SelectorTarget == "" {
 		s.SelectorTarget = PodTemplateSpecLabels
 	}
