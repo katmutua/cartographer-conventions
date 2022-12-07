@@ -36,6 +36,7 @@ func (s *ClusterPodConventionSpec) Default() {
 	}
 
 	// only set this default if ytt is not the current configuration
+	// ensure that  we only set the default if ytt is not set
 	if s.Webhook != nil && s.Ytt == nil {
 		s.Webhook.Default()
 	}

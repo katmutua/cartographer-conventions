@@ -124,7 +124,10 @@ func ResolveConventions() reconcilers.SubReconciler {
 
 				log.Info("created convention ... ", convention)
 
+				// assuming the validation of the convention ensures that we handle these in a
+				// mutually exclusive fashion
 				if source.Spec.Webhook != nil {
+					log.Info("handling a webhook based convetion", source.Spec.Webhook)
 					clientConfig := source.Spec.Webhook.ClientConfig.DeepCopy()
 					if source.Spec.Webhook.Certificate != nil {
 						caBundle, err := getCABundle(ctx, c, source.Spec.Webhook.Certificate, parent)
@@ -138,15 +141,23 @@ func ResolveConventions() reconcilers.SubReconciler {
 					}
 					convention.ClientConfig = *clientConfig
 				} else if source.Spec.Ytt != nil {
-					log.Info("handling a ytt based convention")
-					log.Info("retrieved pod template spec from the workload", parent)
+					log.Info("handling a ytt based convention", "ytt convention", source.Spec.Ytt)
+					log.Info("retrieved pod template spec from the workload", "templatespec", parent.Spec.Template.AsPodTemplateSpec())
+
+					ExecCall(ctx)
+
+					// get package bianry dir
+					// path, err := os.Executable()
+					// if err != nil {
+					// 	log.Info(" current working directory", "path", path)
+					// }
+					// fmt.Println(path)
 
 					// stampedObj, err := ApplyYtt(ctx, *parent)
 					// if err != nil {
 					// 	return nil
 					// }
 					// log.Info("stamped out object", stampedObj)
-					ExecCall()
 				}
 				conventions = append(conventions, convention)
 			}
@@ -164,15 +175,11 @@ func ResolveConventions() reconcilers.SubReconciler {
 	}
 }
 
-func ExecCall() {
-	app := "echo"
+func ExecCall(ctx context.Context) {
+	app := "ytt"
 
-	arg0 := "-e"
-	arg1 := "Hello world"
-	arg2 := "\n\tfrom"
-	arg3 := "golang"
-
-	cmd := exec.Command(app, arg0, arg1, arg2, arg3)
+	args := []string{"--version"}
+	cmd := exec.CommandContext(ctx, app, args...)
 	stdout, err := cmd.Output()
 
 	if err != nil {
@@ -180,7 +187,6 @@ func ExecCall() {
 		return
 	}
 	fmt.Println(string(stdout))
-
 }
 
 func ApplyYtt(ctx context.Context, workload conventionsv1alpha1.PodIntent) (interface{}, error) {
@@ -197,16 +203,6 @@ func ApplyYtt(ctx context.Context, workload conventionsv1alpha1.PodIntent) (inte
 	if kodata, ok := os.LookupEnv("KO_DATA_PATH"); ok {
 		ytt = path.Join(kodata, fmt.Sprintf("ytt-%s-%s", runtime.GOOS, runtime.GOARCH))
 	}
-
-	// toolsBinDir := filepath.Join(projectRootDir, constants.ToolsBinDirPath)
-	// ytt_command := exec.Command(
-	// 	filepath.Join(toolsBinDir, "ytt"),
-	// 	"-f-",
-	// 	"-f", packageHelpersLibFile,
-	// 	"-f", packageValuesFile,
-	// 	"-v", "packageRepository="+packageRepository,
-	// 	"-v", "registry="+registry,
-	// ) //
 
 	args := []string{"--version"}
 	stdin := bytes.NewReader([]byte(template.Spec.String()))
