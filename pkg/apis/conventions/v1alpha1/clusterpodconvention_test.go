@@ -101,14 +101,15 @@ func TestClusterPodConventionValidate(t *testing.T) {
 		target   *ClusterPodConvention
 		expected validation.FieldErrors
 	}{{
-		name: "empty webhook",
+		name: "both webhook and ytt are nil or not specified",
 		target: &ClusterPodConvention{
 			Spec: ClusterPodConventionSpec{
 				SelectorTarget: "PodTemplateSpec",
 				Priority:       "Normal",
+				Ytt:            nil,
 			},
 		},
-		expected: validation.ErrMissingField("spec.webhook"),
+		expected: validation.ErrMissingField("spec.webhook").Also(validation.ErrMissingField("spec.ytt")),
 	},
 		{
 			name: "neither URL nor service",

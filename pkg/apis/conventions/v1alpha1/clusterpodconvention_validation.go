@@ -72,12 +72,49 @@ func (s *ClusterPodConventionSpec) Validate() validation.FieldErrors {
 		})
 	}
 
-	// Webhook will be required mutually exclusive of other options that don't exist yet
-	if s.Webhook == nil {
-		errs = errs.Also(validation.ErrMissingField("webhook"))
+	// cases to check for configuration validity
+	// both configurations provided
+	// Ytt configuration provided but the template is an empty string
+
+	if s.Webhook == nil && s.Ytt == nil {
+
+		// if s.Webhook == nil {
+	// 	errs = errs.Also(validation.ErrMissingField("webhook"))
+	// } else {
+	// 	errs = errs.Also(s.Webhook.Validate().ViaField("webhook"))
+	// }
+		
+		errs = errs.Also(validation.ErrMissingField("webhook")).Also(validation.ErrMissingField("ytt"))
 	} else {
-		errs = errs.Also(s.Webhook.Validate().ViaField("webhook"))
+		// // where both webhook and yttt configurations are provided
+		// if s.Webhook != nil && s.Ytt != nil {
+		// 	// provide a suitable error message
+		// }
+
+		if s.Webhook != nil && s.Ytt != nil {
+			// handle situation where both values are provided
+			errs.Also("choose only one configuration either webhook or ytt")
+		}
+
+		// where the ytt configuration is provided but the template is an empty string 
+		if s.Webhook == nil && s.Ytt != nil && s.Ytt.YttTemplate == " " {
+			errs = errs.Also(validation.ErrMissingField("ytt.yttTemplate"))
+		}
+
+
+		if s.Webhook != nil {
+			errs = errs.Also(s.Webhook.Validate().ViaField("webhook"))
+		}
 	}
+
+
+	}
+	// Webhook will be required mutually exclusive of other options that don't exist yet
+	// if s.Webhook == nil {
+	// 	errs = errs.Also(validation.ErrMissingField("webhook"))
+	// } else {
+	// 	errs = errs.Also(s.Webhook.Validate().ViaField("webhook"))
+	// }
 
 	if s.SelectorTarget != PodTemplateSpecLabels && s.SelectorTarget != PodIntentLabels {
 		errs = errs.Also(validation.FieldErrors{

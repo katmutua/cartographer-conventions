@@ -113,6 +113,16 @@ func ResolveConventions() reconcilers.SubReconciler {
 					Selectors: source.Spec.Selectors,
 					Priority:  source.Spec.Priority,
 				}
+
+				if source.Spec.Ytt != nil {
+					// process ytt template
+					if source.Spec.Ytt.YttTemplate != "" {
+						// extract out the ytt string into a ytt template
+						// validate that it is actually a ytt template
+					}
+
+				}
+
 				if source.Spec.Webhook != nil {
 					clientConfig := source.Spec.Webhook.ClientConfig.DeepCopy()
 					if source.Spec.Webhook.Certificate != nil {
