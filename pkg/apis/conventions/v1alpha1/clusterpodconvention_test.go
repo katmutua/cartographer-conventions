@@ -111,6 +111,36 @@ func TestClusterPodConventionValidate(t *testing.T) {
 		expected: validation.ErrMissingField("spec.webhook"),
 	},
 		{
+			name: "empty ytt template string",
+			target: &ClusterPodConvention{
+				Spec: ClusterPodConventionSpec{
+					SelectorTarget: "PodTemplateSpec",
+					Priority:       "Early",
+					Ytt: &ClusterPodConventionYtt{
+						Template: "",
+					},
+				},
+			},
+			expected: validation.ErrMissingField("spec.ytt"),
+		},
+		// {
+		// 	name: "both webhook and ytt configurations are specified",
+		// 	target: &ClusterPodConvention{
+		// 		Spec: ClusterPodConventionSpec{
+		// 			SelectorTarget: "PodTemplateSpec",
+		// 			Priority:       "Early",
+		// 			Ytt: &ClusterPodConventionYtt{
+		// 				Template: "a valid ytt template",
+		// 			},
+		// 			Webhook: &ClusterPodConventionWebhook{
+		// 				ClientConfig: validClientConfig,
+		// 			},
+		// 		},
+		// 	},
+		// return a suitable message showing that this is not allowed
+		// expected: nil,
+		// },
+		{
 			name: "neither URL nor service",
 			target: &ClusterPodConvention{
 				Spec: ClusterPodConventionSpec{

@@ -113,7 +113,8 @@ func ResolveConventions() reconcilers.SubReconciler {
 					Selectors: source.Spec.Selectors,
 					Priority:  source.Spec.Priority,
 				}
-				if source.Spec.Webhook != nil {
+				// need to ensure that we expect the user to exclusively configure the webhook or the ytt config
+				if source.Spec.Ytt == nil && source.Spec.Webhook != nil {
 					clientConfig := source.Spec.Webhook.ClientConfig.DeepCopy()
 					if source.Spec.Webhook.Certificate != nil {
 						caBundle, err := getCABundle(ctx, c, source.Spec.Webhook.Certificate, parent, source)
@@ -126,6 +127,11 @@ func ResolveConventions() reconcilers.SubReconciler {
 						clientConfig.CABundle = caBundle
 					}
 					convention.ClientConfig = *clientConfig
+				}
+				// need to ensure that we expect the user to exclusively configure the webhook or the ytt config
+				if source.Spec.Webhook == nil && source.Spec.Ytt.Template != "" {
+					yttTemplate := source.Spec.Ytt.Template
+					log.Info("valid template provided", yttTemplate)
 				}
 				conventions = append(conventions, convention)
 			}

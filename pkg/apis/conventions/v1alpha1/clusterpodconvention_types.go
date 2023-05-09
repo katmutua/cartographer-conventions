@@ -46,6 +46,11 @@ type ClusterPodConventionSpec struct {
 	SelectorTarget SelectorTargetSource         `json:"selectorTarget"`
 	Priority       PriorityLevel                `json:"priority,omitempty"`
 	Webhook        *ClusterPodConventionWebhook `json:"webhook,omitempty"`
+	Ytt            *ClusterPodConventionYtt     `json:"ytt,omitempty"`
+}
+
+type ClusterPodConventionYtt struct {
+	Template string `json:"template"`
 }
 
 type ClusterPodConventionWebhook struct {

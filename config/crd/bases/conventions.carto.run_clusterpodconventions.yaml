@@ -101,6 +101,13 @@ spec:
                 required:
                 - clientConfig
                 type: object
+              ytt:
+                properties:
+                  template:
+                    type: string
+                required:
+                - template
+                type: object
             type: object
         required:
         - spec
