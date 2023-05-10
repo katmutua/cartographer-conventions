@@ -24,7 +24,7 @@ scan-terms: ## Scan for inclusive terminology
 	@$(WOKE) . -c https://via.vmw.com/its-woke-rules --exit-1-on-failure
 
 # Generate manifests e.g. CRD, RBAC etc.
-.PHONY: manifests
+.PHONY: manifests kodata
 manifests:
 	$(CONTROLLER_GEN) crd:crdVersions=v1 rbac:roleName=manager-role webhook crd:maxDescLen=0 \
 		paths="./pkg/apis/conventions/...;./pkg/controllers/..." \
@@ -36,7 +36,7 @@ manifests:
 
 dist: dist/cartographer-conventions.yaml
 
-dist/cartographer-conventions.yaml: generate manifests
+dist/cartographer-conventions.yaml: generate manifests 
 	$(KUSTOMIZE) build config/default \
 	  | $(YTT) -f - -f dist/strip-status.yaml -f dist/aks-webhooks.yaml \
 	  > dist/cartographer-conventions.yaml
@@ -55,6 +55,18 @@ fmt:
 .PHONY: vet
 vet:
 	go vet ./...
+
+
+# download the ytt binary to the kodata repository 
+.PHONY: kodata
+kodata: cmd/cartographer/kodata
+
+cmd/cartographer/kodata: cmd/cartographer/kodata/ytt-linux-amd64
+
+cmd/cartographer/kodata/ytt-linux-amd64: Makefile
+	curl -sL https://github.com/vmware-tanzu/carvel-ytt/releases/download/v0.36.0/ytt-linux-amd64 -o cmd/kodata/ytt-linux-amd64
+	chmod +x cmd/cartographer/kodata/ytt-linux-amd64
+
 
 .PHONY: generate
 generate: generate-internal fmt ## Generate code

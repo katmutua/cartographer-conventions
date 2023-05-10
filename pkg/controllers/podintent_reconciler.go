@@ -20,6 +20,9 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"os"
+	"path"
+	"runtime"
 	"sort"
 	"strings"
 
@@ -132,6 +135,25 @@ func ResolveConventions() reconcilers.SubReconciler {
 				if source.Spec.Webhook == nil && source.Spec.Ytt.Template != "" {
 					yttTemplate := source.Spec.Ytt.Template
 					log.Info("valid template provided", yttTemplate)
+
+					// obj := metav1.PartialObjectMetadata{}
+					// convert string to template  object
+
+					// validate that we do not have any errors
+					// if err := json.Unmarshal(yttTemplate, &obj); err != nil {
+					// 	return fmt.Errorf("invalid template: failed to parse object metadata: %w", err)
+					// }
+					// if obj.Namespace != metav1.NamespaceNone {
+					// 	return errors.New("invalid template: template should not set metadata.namespace on the child object")
+					// }
+
+					ytt := "ytt"
+					if kodata, ok := os.LookupEnv("KO_DATA_PATH"); ok {
+						ytt = path.Join(kodata, fmt.Sprintf("ytt-%s-%s", runtime.GOOS, runtime.GOARCH))
+					}
+					log := logr.FromContextOrDiscard(ctx)
+					log.Info("ytt version installed", ytt)
+
 				}
 				conventions = append(conventions, convention)
 			}
