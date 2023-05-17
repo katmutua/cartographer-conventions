@@ -215,7 +215,7 @@ func BuildRegistryConfig(rc binding.RegistryConfig) reconcilers.SubReconciler {
 func getCABundle(ctx context.Context, c reconcilers.Config, certRef *conventionsv1alpha1.ClusterPodConventionWebhookCertificate, parent *conventionsv1alpha1.PodIntent, convention *conventionsv1alpha1.ClusterPodConvention) ([]byte, error) {
 	allCertReqs := &certmanagerv1.CertificateRequestList{}
 	if err := c.List(ctx, allCertReqs, client.InNamespace(certRef.Namespace)); err != nil {
-		return nil, fmt.Errorf("failed to fetch associated certificate requests in namespace %q: %v", certRef.Namespace, err)
+		return nil, fmt.Errorf("generating a list of certificate requests from namespace %q:  failed with error %v", certRef.Namespace, err)
 	}
 
 	certReqs := []certmanagerv1.CertificateRequest{}
@@ -242,7 +242,7 @@ func getCABundle(ctx context.Context, c reconcilers.Config, certRef *conventions
 	}
 
 	if len(certReqs) == 0 {
-		return nil, fmt.Errorf("unable to find valid certificaterequests for certificate %q configured in convention %q", fmt.Sprintf("%s/%s", certRef.Namespace, certRef.Name), convention.Name)
+		return nil, fmt.Errorf("failed to find any valid CertificateRequests for certificate: %q configured in convention: %q", fmt.Sprintf("%s/%s", certRef.Namespace, certRef.Name), convention.Name)
 	}
 
 	// take the most recent 3 certificate request CAs

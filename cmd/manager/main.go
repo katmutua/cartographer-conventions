@@ -95,7 +95,7 @@ func main() {
 		},
 	})
 	if err != nil {
-		setupLog.Error(err, "unable to start manager")
+		setupLog.Error(err, "unable to initialise a new manager")
 		os.Exit(1)
 	}
 	client, err := kubernetes.NewForConfig(mgr.GetConfig())
