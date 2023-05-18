@@ -43,9 +43,10 @@ type ClusterPodConventionSpec struct {
 	// It must match the workload's pod template's labels.
 	Selectors []metav1.LabelSelector `json:"selectors,omitempty"`
 	// +optional
-	SelectorTarget SelectorTargetSource         `json:"selectorTarget"`
-	Priority       PriorityLevel                `json:"priority,omitempty"`
-	Webhook        *ClusterPodConventionWebhook `json:"webhook,omitempty"`
+	SelectorTarget SelectorTargetSource             `json:"selectorTarget"`
+	Priority       PriorityLevel                    `json:"priority,omitempty"`
+	Webhook        *ClusterPodConventionWebhook     `json:"webhook,omitempty"`
+	Ytt            *ClusterPodConventionYttTemplate `json:"ytt,omitempty"`
 }
 
 type ClusterPodConventionWebhook struct {
@@ -53,6 +54,10 @@ type ClusterPodConventionWebhook struct {
 	ClientConfig admissionregistrationv1.WebhookClientConfig `json:"clientConfig"`
 	// Certificate references a cert-manager Certificate resource whose CA should be trusted.
 	Certificate *ClusterPodConventionWebhookCertificate `json:"certificate,omitempty"`
+}
+
+type ClusterPodConventionYttTemplate struct {
+	Template string `json:"template"`
 }
 
 type ClusterPodConventionWebhookCertificate struct {

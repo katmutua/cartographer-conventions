@@ -34,6 +34,7 @@ type Convention struct {
 	Selectors      []metav1.LabelSelector
 	Priority       conventionsv1alpha1.PriorityLevel
 	ClientConfig   admissionregistrationv1.WebhookClientConfig
+	YTTTemplate    conventionsv1alpha1.ClusterPodConventionYttTemplate
 }
 
 func (o *Convention) Apply(ctx context.Context, conventionRequest *webhookv1alpha1.PodConventionContext, wc WebhookConfig) (*webhookv1alpha1.PodConventionContext, error) {

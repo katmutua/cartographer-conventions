@@ -1,0 +1,23 @@
+---
+apiVersion: conventions.carto.run/v1alpha1
+kind: ClusterPodConvention
+metadata:
+  name: spring-sample
+spec:
+ ytt:
+    template: |
+        #@ load("@ytt:overlay", "overlay")
+        #! apply matcher as you would do using the selector field
+        #@overlay/match by=overlay.subset({"metadata":{"name": "spring-app"}})
+        ---
+        spec:
+          containers:
+          #@overlay/match by=overlay.subset({"name": "web2"})
+          - env:
+            #@overlay/append missing_ok=True
+            - name: LOGGING_LEVEL_COM_EXAMPLE_CONVENTION
+              value: info
+            - name: SERVER_PORT
+              value: "8443"
+            - name: SERVER_TOMCAT_MAX_THREADS
+              value: "20"

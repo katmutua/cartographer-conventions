@@ -20,16 +20,23 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"os"
+	"os/exec"
+	"path"
+	"runtime"
 	"sort"
 	"strings"
+	"time"
 
 	"github.com/go-logr/logr"
 	"github.com/google/go-containerregistry/pkg/authn/k8schain"
 	"github.com/vmware-labs/reconciler-runtime/apis"
 	"github.com/vmware-labs/reconciler-runtime/reconcilers"
 	"github.com/vmware-labs/reconciler-runtime/tracker"
+	"gopkg.in/yaml.v2"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
@@ -108,12 +115,19 @@ func ResolveConventions() reconcilers.SubReconciler {
 			for i := range sources.Items {
 				source := sources.Items[i].DeepCopy()
 				source.Default()
+
 				convention := binding.Convention{
 					Name:      source.Name,
 					Selectors: source.Spec.Selectors,
 					Priority:  source.Spec.Priority,
 				}
+
+				log.Info("created convention ... ", convention)
+
+				// assuming the validation of the convention ensures that we handle these in a
+				// mutually exclusive fashion
 				if source.Spec.Webhook != nil {
+					log.Info("handling a webhook based convetion", source.Spec.Webhook)
 					clientConfig := source.Spec.Webhook.ClientConfig.DeepCopy()
 					if source.Spec.Webhook.Certificate != nil {
 						caBundle, err := getCABundle(ctx, c, source.Spec.Webhook.Certificate, parent, source)
@@ -126,6 +140,24 @@ func ResolveConventions() reconcilers.SubReconciler {
 						clientConfig.CABundle = caBundle
 					}
 					convention.ClientConfig = *clientConfig
+				} else if source.Spec.Ytt != nil {
+					log.Info("handling a ytt based convention", "ytt convention", source.Spec.Ytt)
+					log.Info("retrieved pod template spec from the workload", "templatespec", parent.Spec.Template.AsPodTemplateSpec())
+
+					ExecCall(ctx)
+
+					// get package bianry dir
+					// path, err := os.Executable()
+					// if err != nil {
+					// 	log.Info(" current working directory", "path", path)
+					// }
+					// fmt.Println(path)
+
+					// stampedObj, err := ApplyYtt(ctx, *parent)
+					// if err != nil {
+					// 	return nil
+					// }
+					// log.Info("stamped out object", stampedObj)
 				}
 				conventions = append(conventions, convention)
 			}
@@ -141,6 +173,70 @@ func ResolveConventions() reconcilers.SubReconciler {
 			return nil
 		},
 	}
+}
+
+func ExecCall(ctx context.Context) {
+	app := "ytt"
+
+	args := []string{"--version"}
+	cmd := exec.CommandContext(ctx, app, args...)
+	stdout, err := cmd.Output()
+
+	if err != nil {
+		fmt.Println(err.Error())
+		return
+	}
+	fmt.Println(string(stdout))
+}
+
+func ApplyYtt(ctx context.Context, workload conventionsv1alpha1.PodIntent) (interface{}, error) {
+	// read template spec from the workload
+	template := workload.Spec.Template.AsPodTemplateSpec()
+	log := logr.FromContextOrDiscard(ctx)
+
+	// set timeout to about  4 secs to process the ytt template
+	ctx, cancel := context.WithTimeout(ctx, 4*time.Second)
+	defer cancel()
+
+	// setup ytt path
+	ytt := "ytt"
+	if kodata, ok := os.LookupEnv("KO_DATA_PATH"); ok {
+		ytt = path.Join(kodata, fmt.Sprintf("ytt-%s-%s", runtime.GOOS, runtime.GOARCH))
+	}
+
+	args := []string{"--version"}
+	stdin := bytes.NewReader([]byte(template.Spec.String()))
+	stdout := bytes.NewBuffer([]byte{})
+	stderr := bytes.NewBuffer([]byte{})
+
+	// setup exec call
+	cmd := exec.CommandContext(ctx, ytt, args...)
+	cmd.Stdin = stdin
+	cmd.Stdout = stdout
+	cmd.Stderr = stderr
+
+	log.Info("ytt call args", args)
+	log.Info("ytt call input", template)
+
+	// invoke run call
+	if err := cmd.Run(); err != nil {
+		msg := stderr.String()
+		if msg == "" {
+			log.Error(err, "failed handle ytt")
+			return nil, err
+		}
+		return nil, err
+	}
+	output := stdout.String()
+	log.Info("ytt result", "output", output)
+
+	stampedObject := &unstructured.Unstructured{}
+	log.Info("your stamped object", stampedObject)
+	if err := yaml.Unmarshal([]byte(output), stampedObject); err != nil {
+		// ytt should never return invalid yaml
+		return nil, err
+	}
+	return stampedObject, nil
 }
 
 // +kubebuilder:rbac:groups=core,resources=secrets,verbs=get;list;watch
