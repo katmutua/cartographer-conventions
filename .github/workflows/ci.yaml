@@ -15,17 +15,17 @@ jobs:
   unit:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v3
-    - uses: actions/setup-go@v3
+    - uses: actions/checkout@v4
+    - uses: actions/setup-go@v4
       with:
-        go-version: 1.19.x
+        go-version-file: "go.mod"
     - name: Test
       run: make test
     - name: Scan Inclusive Terminology
       uses: get-woke/woke-action@v0
       with: 
         fail-on-error: true
-        woke-args: -c https://via.vmw.com/its-woke-rules
+        woke-args: -c woke/woke.yaml
     - uses: codecov/codecov-action@v3
     - name: Build
       run: |
@@ -43,19 +43,14 @@ jobs:
       KO_DOCKER_REPO: registry.local/conventions
       BUNDLE: registry.local/conventions/bundle
     steps:
-    - uses: actions/checkout@v3
-    - uses: actions/setup-go@v3
+    - uses: actions/checkout@v4
+    - uses: actions/setup-go@v4
       with:
-        go-version: 1.19.x
-    - uses: vmware-tanzu/carvel-setup-action@v1
+        go-version-file: "go.mod"
+    - uses: carvel-dev/setup-action@v2
       with:
         token: ${{ secrets.GITHUB_TOKEN }}
-    - name: Install ko
-      run: |
-        cd $(mktemp -d -t ko.XXXX)
-        curl -sL https://github.com/ko-build/ko/releases/download/v0.12.0/ko_0.12.0_Linux_x86_64.tar.gz | tar -xz 
-        sudo mv ./ko /usr/local/bin
-        cd -
+    - uses: ko-build/setup-ko@v0.6
     - name: Generate certs
       run: |
         set -o errexit
@@ -199,26 +194,25 @@ jobs:
       fail-fast: false
       matrix:
         k8s:
-        - 1.21.10
-        - 1.22.7
-        - 1.23.4
-        - 1.24.2
         - 1.25.0
+        - 1.26.0
+        - 1.27.2
+        - 1.28.0
     env:
       REGISTRY_NAME: registry.local
       BUNDLE: registry.local/conventions/bundle
     steps:
-    - uses: actions/checkout@v3
-    - uses: actions/setup-go@v3
+    - uses: actions/checkout@v4
+    - uses: actions/setup-go@v4
       with:
-        go-version: 1.19.x
-    - uses: vmware-tanzu/carvel-setup-action@v1
+        go-version-file: "go.mod"
+    - uses: carvel-dev/setup-action@v2
       with:
         token: ${{ secrets.GITHUB_TOKEN }}
     - name: Install kind
       run: |
         cd $(mktemp -d -t kind.XXXX)
-        curl -Lo ./kind https://kind.sigs.k8s.io/dl/v0.15.0/kind-$(go env GOHOSTOS)-$(go env GOHOSTARCH)
+        curl -Lo ./kind https://kind.sigs.k8s.io/dl/v0.19.0/kind-$(go env GOHOSTOS)-$(go env GOHOSTARCH)
         chmod +x ./kind
         sudo mv ./kind /usr/local/bin
         cd -
@@ -586,8 +580,8 @@ jobs:
       REGISTRY_NAME: registry.local
       BUNDLE: registry.local/conventions/bundle
     steps:
-    - uses: actions/checkout@v3
-    - uses: vmware-tanzu/carvel-setup-action@v1
+    - uses: actions/checkout@v4
+    - uses: carvel-dev/setup-action@v2
       with:
         token: ${{ secrets.GITHUB_TOKEN }}
     - name: Generate certs
@@ -711,7 +705,7 @@ jobs:
     if: startsWith(github.ref, 'refs/tags/')
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - name: Get the version
       id: get_version
       run: echo ::set-output name=VERSION::${GITHUB_REF/refs\/tags\//}
@@ -750,7 +744,7 @@ jobs:
         asset_path: cartographer-conventions-samples-bundle.tar
         asset_name: cartographer-conventions-samples-bundle-${{ steps.get_version.outputs.VERSION }}.tar
         asset_content_type: application/x-tar
-    - uses: vmware-tanzu/carvel-setup-action@v1
+    - uses: carvel-dev/setup-action@v2
       with:
         token: ${{ secrets.GITHUB_TOKEN }}
     - name: Install crane
@@ -761,7 +755,7 @@ jobs:
         sudo mv ./crane /usr/local/bin
         cd -
     - name: Login to GitHub Container Registry
-      uses: docker/login-action@v2
+      uses: docker/login-action@v3
       with:
         registry: ghcr.io
         username: ${{ github.actor }}

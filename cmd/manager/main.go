@@ -31,8 +31,10 @@ import (
 	"k8s.io/client-go/kubernetes"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	ctrl "sigs.k8s.io/controller-runtime"
+	ctrlcache "sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
+	"sigs.k8s.io/controller-runtime/pkg/metrics/server"
 
 	// credential providers
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
@@ -83,29 +85,37 @@ func main() {
 	ctrl.SetLogger(zap.New(zap.UseFlagOptions(&opts)))
 
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
-		Scheme:                 scheme,
-		MetricsBindAddress:     metricsAddr,
+		Scheme: scheme,
+		Metrics: server.Options{
+			BindAddress: metricsAddr,
+		},
 		HealthProbeBindAddress: probesAddr,
 		LeaderElection:         enableLeaderElection,
 		LeaderElectionID:       "conventions-controller-leader-election-helper",
-		SyncPeriod:             &syncPeriod,
-		// wokeignore:rule=disable
-		ClientDisableCacheFor: []client.Object{
-			&corev1.Secret{},
+		Cache: ctrlcache.Options{
+			SyncPeriod: &syncPeriod,
+		},
+		Client: client.Options{
+			Cache: &client.CacheOptions{
+				// wokeignore:rule=disable
+				DisableFor: []client.Object{
+					&corev1.Secret{},
+				},
+			},
 		},
 	})
 	if err != nil {
-		setupLog.Error(err, "unable to start manager")
+		setupLog.Error(err, "there was an error initializing a new `Manager` object")
 		os.Exit(1)
 	}
 	client, err := kubernetes.NewForConfig(mgr.GetConfig())
 	if err != nil {
-		setupLog.Error(err, "unable to create clientset")
+		setupLog.Error(err, "there was an error creating a new clientset using config provided")
 		os.Exit(1)
 	}
 	authInfoResolver, err := webhookutil.NewDefaultAuthenticationInfoResolver("")
 	if err != nil {
-		setupLog.Error(err, "unable to create authentication info resolver")
+		setupLog.Error(err, "there was an error creating a new authentication info resolver object")
 		os.Exit(1)
 	}
 	wc := binding.WebhookConfig{
@@ -160,7 +170,7 @@ func main() {
 
 	setupLog.Info("starting manager")
 	if err := mgr.Start(ctx); err != nil {
-		setupLog.Error(err, "problem running manager")
+		setupLog.Error(err, "there was an error starting the manager")
 		os.Exit(1)
 	}
 }
